@@ -4,12 +4,6 @@ import './App.css';
 
 function Navbar() {
   const { login, authenticated, logout, user } = usePrivy();
-  
-  const handleLogin = () => {
-    console.log("Login button clicked"); // This proves the button works
-    login();
-  };
-
   return (
     <nav style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 60px', alignItems: 'center', backgroundColor: '#000' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -20,10 +14,10 @@ function Navbar() {
         <a href="#docs" style={{ color: '#666', textDecoration: 'none', fontSize: '14px' }}>Docs</a>
         {authenticated ? (
           <button onClick={logout} style={{ backgroundColor: '#111', color: 'white', padding: '8px 20px', borderRadius: '20px', border: '1px solid #333', cursor: 'pointer' }}>
-            Logout
+            Logout ({user.google?.email?.split('@')[0]})
           </button>
         ) : (
-          <button onClick={handleLogin} style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: '25px', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
+          <button onClick={() => login()} style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: '25px', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
             Sign In
           </button>
         )}
@@ -74,11 +68,11 @@ function Dashboard() {
   const { user } = usePrivy();
   return (
     <div style={{ color: 'white', padding: '60px', textAlign: 'center' }}>
-      <h1>Dashboard</h1>
+      <h1>Founder Dashboard</h1>
       <p style={{ color: '#888' }}>Welcome, {user?.google?.email}</p>
       <div style={{ background: '#111', padding: '40px', borderRadius: '20px', border: '1px solid #222', maxWidth: '400px', margin: '40px auto' }}>
         <h2 style={{ fontSize: '2.5rem' }}>$128,430.00</h2>
-        <p>Available Balance</p>
+        <p>Current Balance</p>
       </div>
     </div>
   );
@@ -97,7 +91,9 @@ export default function App() {
       onSuccess={() => window.location.reload()}
       config={{
         loginMethods: ['google'],
-        appearance: { theme: 'dark', accentColor: '#3b82f6' }
+        appearance: { theme: 'dark', accentColor: '#3b82f6' },
+        // Use redirect instead of popup to force it to work on Brave/Chrome
+        loginMethod: 'redirect' 
       }}
     >
       <div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
