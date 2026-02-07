@@ -1,7 +1,7 @@
 import React from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import './App.css';
-
+import Dashboard from './dashboard/Dashboard';
 function Navbar() {
   const { login, authenticated, logout, user } = usePrivy();
   return (
@@ -64,26 +64,21 @@ function Hero() {
   );
 }
 
-function Dashboard() {
-  const { user } = usePrivy();
-  return (
-    <div style={{ color: 'white', padding: '60px', textAlign: 'center' }}>
-      <h1>Founder Dashboard</h1>
-      <p style={{ color: '#888' }}>Welcome, {user?.google?.email}</p>
-      <div style={{ background: '#111', padding: '40px', borderRadius: '20px', border: '1px solid #222', maxWidth: '400px', margin: '40px auto' }}>
-        <h2 style={{ fontSize: '2.5rem' }}>$128,430.00</h2>
-        <p>Current Balance</p>
-      </div>
-    </div>
-  );
-}
-
 function MainContent() {
   const { authenticated, ready } = usePrivy();
   if (!ready) return null;
-  return authenticated ? <Dashboard /> : <Hero />;
-}
 
+  // If logged in, show ONLY the Dashboard. 
+  // If not, show the Navbar AND the Hero together.
+  return authenticated ? (
+    <Dashboard /> 
+  ) : (
+    <>
+      <Navbar />
+      <Hero />
+    </>
+  );
+}
 export default function App() {
   return (
     <PrivyProvider
@@ -96,10 +91,9 @@ export default function App() {
         loginMethod: 'redirect' 
       }}
     >
-      <div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-        <Navbar />
+<div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
         <MainContent />
       </div>
-    </PrivyProvider>
+      </PrivyProvider>
   );
-}
+      }
