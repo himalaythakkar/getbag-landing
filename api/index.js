@@ -60,13 +60,10 @@ const createPaymentLink = async (req, res) => {
     }
 
     try {
-        // Step A: Save to Airtable Products
+        // Step A: Save to Airtable Orders table (using it for products)
         const record = await airtableRequest('POST', PRODUCTS_TABLE, {
             'Company Name': companyName,
-            'Product Name': productName,
-            'Description': description,
-            'Price': parseFloat(price),
-            'Status': 'Active'
+            'Product Name': productName
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}`;
@@ -93,9 +90,7 @@ const createSubscriptionPlan = async (req, res) => {
         const record = await airtableRequest('POST', SUBS_TABLE, {
             'Company Name': companyName,
             'Plan Title': productName,
-            'Description': description,
-            'Recurring Price': parseFloat(price),
-            'Status': 'Active'
+            'Description': description
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}?type=sub`;
@@ -120,10 +115,10 @@ const getProductById = async (req, res) => {
         res.json({
             product: {
                 id: record.id,
-                productName: record.fields['Product Name'] || record.fields['Plan Title'],
-                description: record.fields['Description'],
-                price: record.fields['Price'] || record.fields['Recurring Price'],
-                companyName: record.fields['Company Name'],
+                productName: record.fields['Product Name'] || record.fields['Plan Title'] || 'Product',
+                description: record.fields['Description'] || '',
+                price: 0, // Price will be handled by Make.com
+                companyName: record.fields['Company Name'] || 'Company',
                 merchantLogo: record.fields['Logo URL'],
                 type: isSub ? 'subscription' : 'one-time'
             }
@@ -173,19 +168,19 @@ const getProductsList = async (req, res) => {
             ...(oneTime.records || []).map(r => ({
                 id: r.id,
                 type: 'payment_link',
-                companyName: r.fields['Company Name'],
-                productName: r.fields['Product Name'],
-                price: r.fields['Price'],
-                url: r.fields['Checkout URL'],
+                companyName: r.fields['Company Name'] || 'N/A',
+                productName: r.fields['Product Name'] || 'N/A',
+                price: 0,
+                url: r.fields['Checkout URL'] || '',
                 createdAt: r.createdTime
             })),
             ...(sub.records || []).map(r => ({
                 id: r.id,
                 type: 'subscription',
-                companyName: r.fields['Company Name'],
-                productName: r.fields['Plan Title'],
-                price: r.fields['Recurring Price'],
-                url: r.fields['Checkout URL'],
+                companyName: r.fields['Company Name'] || 'N/A',
+                productName: r.fields['Plan Title'] || 'N/A',
+                price: 0,
+                url: r.fields['Checkout URL'] || '',
                 createdAt: r.createdTime
             }))
         ];
