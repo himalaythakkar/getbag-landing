@@ -63,7 +63,8 @@ const createPaymentLink = async (req, res) => {
         // Step A: Save to Airtable Orders table (using it for products)
         const record = await airtableRequest('POST', PRODUCTS_TABLE, {
             'Company Name': companyName,
-            'Product Name': productName
+            'Product Name': productName,
+            'Product Price': parseFloat(price)
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}`;
@@ -87,7 +88,8 @@ const createSubscriptionPlan = async (req, res) => {
         const record = await airtableRequest('POST', SUBS_TABLE, {
             'Company Name': companyName,
             'Plan Title': productName,
-            'Description': description
+            'Description': description,
+            'Recurring Price': parseFloat(price)
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}?type=sub`;
@@ -111,7 +113,7 @@ const getProductById = async (req, res) => {
                 id: record.id,
                 productName: record.fields['Product Name'] || record.fields['Plan Title'] || 'Product',
                 description: record.fields['Description'] || '',
-                price: 0, // Price will be handled by Make.com
+                price: record.fields['Product Price'] || record.fields['Recurring Price'] || 0,
                 companyName: record.fields['Company Name'] || 'Company',
                 merchantLogo: record.fields['Logo URL'],
                 type: isSub ? 'subscription' : 'one-time'
@@ -164,7 +166,7 @@ const getProductsList = async (req, res) => {
                 type: 'payment_link',
                 companyName: r.fields['Company Name'] || 'N/A',
                 productName: r.fields['Product Name'] || 'N/A',
-                price: 0,
+                price: r.fields['Product Price'] || 0,
                 url: r.fields['Checkout URL'] || '',
                 createdAt: r.createdTime
             })),
@@ -173,7 +175,7 @@ const getProductsList = async (req, res) => {
                 type: 'subscription',
                 companyName: r.fields['Company Name'] || 'N/A',
                 productName: r.fields['Plan Title'] || 'N/A',
-                price: 0,
+                price: r.fields['Recurring Price'] || 0,
                 url: r.fields['Checkout URL'] || '',
                 createdAt: r.createdTime
             }))
