@@ -180,6 +180,7 @@ const CreatePaymentModal = ({ onClose }) => {
                             <div>
                                 <div style={{ fontSize: '1.25rem', fontWeight: '700', letterSpacing: '-0.01em', marginBottom: '4px' }}>One-time Payment</div>
                                 <div style={{ fontSize: '0.9rem', color: '#666', lineHeight: '1.5' }}>Perfect for single items, invoices, or simple checkouts worldwide.</div>
+                                <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '8px', fontWeight: '600' }}>⚠️ Airtable error - fixing soon</div>
                             </div>
                         </button>
                         <button
