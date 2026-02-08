@@ -19,6 +19,7 @@ const PRODUCTS_TABLE = 'Orders';
 const SUBS_TABLE = 'SubscriptionPlans';
 const ORDERS_TABLE = 'Orders';
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
+const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 
 // Debugging environment variables arrival (without leaking full values)
 console.log('--- Env Check ---');
@@ -127,29 +128,55 @@ const getProductById = async (req, res) => {
 
 const handleCheckoutSubmit = async (req, res) => {
     const { productId, name, email, type } = req.body;
+    const isSub = type === 'sub';
+    const table = isSub ? SUBS_TABLE : PRODUCTS_TABLE;
 
-    if (!MAKE_WEBHOOK_URL) {
-        console.error('MAKE_WEBHOOK_URL is not defined');
-        return res.status(500).json({ error: 'Checkout automation not configured' });
+    if (!NOWPAYMENTS_API_KEY) {
+        console.error('NOWPAYMENTS_API_KEY is not defined');
+        return res.status(500).json({ error: 'Payment gateway not configured' });
     }
 
     try {
-        // Send to Make.com which will:
-        // 1. Save order to Airtable
-        // 2. Create NOWPayments invoice/sub
-        // 3. Return payment URL
-        const response = await axios.post(MAKE_WEBHOOK_URL, {
-            productId,
-            customerName: name,
-            customerEmail: email,
-            paymentType: type === 'sub' ? 'Subscription' : 'One-time',
-            timestamp: new Date().toISOString()
+        // 1. Get Product Details from Airtable to get the price
+        const productRecord = await airtableRequest('GET', table, null, productId);
+        const productName = productRecord.fields['Product Name'] || productRecord.fields['Plan Title'];
+        const price = productRecord.fields['Product Price'] || productRecord.fields['Recurring Price'] || 0;
+
+        if (!price || price <= 0) {
+            throw new Error('Invalid product price');
+        }
+
+        // 2. Create NOWPayments Invoice
+        const nowPaymentsHeader = {
+            'x-api-key': NOWPAYMENTS_API_KEY,
+            'Content-Type': 'application/json'
+        };
+
+        const invoiceData = {
+            price_amount: price,
+            price_currency: 'usd',
+            order_id: `${productId.substring(0, 8)}-${Date.now()}`,
+            order_description: `${productName} - Customer: ${name}`,
+            success_url: `${req.headers.origin || ''}/dashboard`,
+            cancel_url: `${req.headers.origin || ''}/checkout/${productId}${isSub ? '?type=sub' : ''}`
+        };
+
+        console.log('[NOWPayments] Creating invoice for:', invoiceData.order_description);
+
+        const npResponse = await axios.post('https://api.nowpayments.io/v1/invoice', invoiceData, {
+            headers: nowPaymentsHeader
         });
 
-        res.json(response.data);
+        // 3. Return the invoice URL to the frontend
+        res.json({ invoice_url: npResponse.data.invoice_url });
+
     } catch (error) {
-        console.error('Make.com Error:', error.message);
-        res.status(500).json({ error: 'Failed to process checkout' });
+        const errorDetail = error.response ? error.response.data : error.message;
+        console.error('Checkout Error:', errorDetail);
+        res.status(500).json({
+            error: 'Failed to process checkout',
+            details: typeof errorDetail === 'object' ? JSON.stringify(errorDetail) : errorDetail
+        });
     }
 };
 
