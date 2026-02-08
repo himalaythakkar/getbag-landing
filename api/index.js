@@ -84,7 +84,7 @@ const createSubscriptionPlan = async (req, res) => {
     try {
         // Step A: Save to Airtable SubscriptionPlans
         const record = await airtableRequest('POST', SUBS_TABLE, {
-            'Merchant Name': companyName,
+            'Company Name': companyName,
             'Plan Title': productName,
             'Description': description,
             'Recurring Price': parseFloat(price),
