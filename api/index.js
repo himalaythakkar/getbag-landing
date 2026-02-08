@@ -15,9 +15,9 @@ app.use((req, res, next) => {
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || process.env.ORDERS_BASE_ID || process.env.SUBS_BASE_ID;
-const PRODUCTS_TABLE = 'Orders';
-const SUBS_TABLE = 'SubscriptionPlans';
-const ORDERS_TABLE = 'Orders';
+const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE_NAME || 'Products';
+const SUBS_TABLE = process.env.SUBS_TABLE_NAME || 'SubscriptionPlans';
+const ORDERS_TABLE = process.env.ORDERS_TABLE_NAME || 'Orders';
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 
@@ -26,6 +26,7 @@ console.log('--- Env Check ---');
 console.log('BASE_ID exists:', !!AIRTABLE_BASE_ID, AIRTABLE_BASE_ID ? `(${AIRTABLE_BASE_ID.substring(0, 5)}...)` : 'MISSING');
 console.log('PAT exists:', !!AIRTABLE_PAT, AIRTABLE_PAT ? `(${AIRTABLE_PAT.substring(0, 10)}...)` : 'MISSING');
 console.log('PRODUCTS_TABLE:', PRODUCTS_TABLE);
+console.log('SUBS_TABLE:', SUBS_TABLE);
 console.log('-----------------');
 
 // --- Helper: Airtable API ---
@@ -61,18 +62,19 @@ const createPaymentLink = async (req, res) => {
     }
 
     try {
-        // Step A: Save to Airtable Orders table (using it for products)
+        // Step A: Save to Airtable Products table
         const record = await airtableRequest('POST', PRODUCTS_TABLE, {
             'Company Name': companyName,
             'Product Name': productName,
-            'Product Price': parseFloat(price)
+            'Description': description,
+            'Price': parseFloat(price)
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}`;
 
         res.json({ checkout_url, message: 'Payment link created' });
     } catch (error) {
-        console.error('Airtable/NOWPayments Error:', error.response ? error.response.data : error.message);
+        // Log is already handled in airtableRequest
         res.status(500).json({ error: 'Failed to create payment link' });
     }
 };
@@ -97,7 +99,6 @@ const createSubscriptionPlan = async (req, res) => {
 
         res.json({ checkout_url, message: 'Subscription plan created' });
     } catch (error) {
-        console.error('Airtable Error:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Failed to create subscription plan' });
     }
 };
@@ -114,7 +115,7 @@ const getProductById = async (req, res) => {
                 id: record.id,
                 productName: record.fields['Product Name'] || record.fields['Plan Title'] || 'Product',
                 description: record.fields['Description'] || '',
-                price: record.fields['Product Price'] || record.fields['Recurring Price'] || 0,
+                price: record.fields['Price'] || record.fields['Recurring Price'] || record.fields['Product Price'] || 0,
                 companyName: record.fields['Company Name'] || 'Company',
                 merchantLogo: record.fields['Logo URL'],
                 type: isSub ? 'subscription' : 'one-time'
@@ -140,7 +141,7 @@ const handleCheckoutSubmit = async (req, res) => {
         // 1. Get Product Details from Airtable to get the price
         const productRecord = await airtableRequest('GET', table, null, productId);
         const productName = productRecord.fields['Product Name'] || productRecord.fields['Plan Title'];
-        const price = productRecord.fields['Product Price'] || productRecord.fields['Recurring Price'] || 0;
+        const price = productRecord.fields['Price'] || productRecord.fields['Recurring Price'] || productRecord.fields['Product Price'] || 0;
 
         if (!price || price <= 0) {
             throw new Error('Invalid product price');
@@ -193,7 +194,7 @@ const getProductsList = async (req, res) => {
                 type: 'payment_link',
                 companyName: r.fields['Company Name'] || 'N/A',
                 productName: r.fields['Product Name'] || 'N/A',
-                price: r.fields['Product Price'] || 0,
+                price: r.fields['Price'] || r.fields['Product Price'] || 0,
                 url: r.fields['Checkout URL'] || '',
                 createdAt: r.createdTime
             })),
