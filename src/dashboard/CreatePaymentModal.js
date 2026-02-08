@@ -314,8 +314,6 @@ const CreatePaymentModal = ({ onClose }) => {
                 )}
             </div>
         </div>
-            </div >
-        </div >
     );
 };
 
