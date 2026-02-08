@@ -40,7 +40,7 @@ const CreatePaymentModal = ({ onClose }) => {
 
             if (response.data.invoice_url) {
                 console.log('Invoice URL:', response.data.invoice_url);
-                alert(`Payment Link Created: ${response.data.invoice_url}`);
+                window.open(response.data.invoice_url, '_blank');
             } else {
                 alert('Subscription Created Successfully!');
             }

@@ -19,13 +19,14 @@ const Sidebar = ({ setCurrentView, currentView }) => {
           <div key={item}
             onClick={() => {
               if (item === "Home") setCurrentView('revenue');
+              if (item === "Products") setCurrentView('products');
             }}
             style={{
               padding: '10px 12px',
               borderRadius: '6px',
               cursor: 'pointer',
-              color: (item === "Home" && currentView === 'revenue') ? "#fff" : "#888",
-              backgroundColor: (item === "Home" && currentView === 'revenue') ? "#1a1a1a" : "transparent",
+              color: ((item === "Home" && currentView === 'revenue') || (item === "Products" && currentView === 'products')) ? "#fff" : "#888",
+              backgroundColor: ((item === "Home" && currentView === 'revenue') || (item === "Products" && currentView === 'products')) ? "#1a1a1a" : "transparent",
               marginBottom: '4px',
               fontSize: '0.95rem'
             }}>

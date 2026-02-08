@@ -12,7 +12,35 @@ app.use(bodyParser.json());
 
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY || 'your_api_key_here';
 const IPN_SECRET = process.env.IPN_SECRET || 'your_ipn_secret_here';
-const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
+const NOWPAYMENTS_EMAIL = process.env.NOWPAYMENTS_EMAIL;
+const NOWPAYMENTS_PASSWORD = process.env.NOWPAYMENTS_PASSWORD;
+const NOWPAYMENTS_API_URL = process.env.NOWPAYMENTS_API_URL || 'https://api.nowpayments.io/v1';
+
+// Helper to get JWT Token
+let cachedToken = null;
+let tokenExpiry = 0;
+
+const getAuthToken = async () => {
+    const now = Date.now();
+    if (cachedToken && now < tokenExpiry) return cachedToken;
+
+    if (!NOWPAYMENTS_EMAIL || !NOWPAYMENTS_PASSWORD) {
+        throw new Error('NOWPAYMENTS_EMAIL or NOWPAYMENTS_PASSWORD is missing from environment. Run "vercel env pull .env.local" to sync secrets.');
+    }
+
+    try {
+        const response = await axios.post(`${NOWPAYMENTS_API_URL}/auth`, {
+            email: NOWPAYMENTS_EMAIL,
+            password: NOWPAYMENTS_PASSWORD
+        });
+        cachedToken = response.data.token;
+        tokenExpiry = now + (4 * 60 * 1000);
+        return cachedToken;
+    } catch (error) {
+        console.error('Auth failed:', error.response ? error.response.data : error.message);
+        throw new Error('Authentication with NOWPayments failed');
+    }
+};
 
 // Helper to pack metadata
 const packMetadata = (companyName, productName, price) => {
@@ -65,36 +93,42 @@ app.post('/create-subscription', async (req, res) => {
     const packedMetadata = packMetadata(companyName, productName, price);
 
     try {
+        const token = await getAuthToken();
+
         // Step A: Create Plan
         const planResponse = await axios.post(
             `${NOWPAYMENTS_API_URL}/subscriptions/plans`,
             {
-                title: productName,
-                interval_day: 30, // Default to monthly
+                title: `${productName} (${companyName})`,
+                interval_day: 30,
                 amount: price,
-                currency: 'usd'
+                currency: 'usd',
+                ipn_callback_url: req.headers.host ?
+                    `http://${req.headers.host}/api/webhook/nowpayments?meta=${encodeURIComponent(packedMetadata)}` :
+                    undefined
             },
             {
                 headers: {
                     'x-api-key': NOWPAYMENTS_API_KEY,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             }
         );
 
-        const planId = planResponse.data.id;
+        const planId = planResponse.data.result.id;
 
-        // Step B: Create Subscription
+        // Step B: Create Subscription (Removed order_id as it is not allowed)
         const subResponse = await axios.post(
             `${NOWPAYMENTS_API_URL}/subscriptions`,
             {
                 subscription_plan_id: planId,
-                email: email,
-                order_id: packedMetadata // Packing metadata here
+                email: email.trim()
             },
             {
                 headers: {
                     'x-api-key': NOWPAYMENTS_API_KEY,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             }
@@ -107,16 +141,52 @@ app.post('/create-subscription', async (req, res) => {
     }
 });
 
+// 4. 'Products' List
+app.get('/api/products', async (req, res) => {
+    try {
+        const token = await getAuthToken();
+        const [invoicesRes, plansRes] = await Promise.all([
+            axios.get(`${NOWPAYMENTS_API_URL}/payment?limit=50`, { headers: { 'x-api-key': NOWPAYMENTS_API_KEY } }),
+            axios.get(`${NOWPAYMENTS_API_URL}/subscriptions/plans`, {
+                headers: { 'x-api-key': NOWPAYMENTS_API_KEY, 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+
+        const paymentLinks = (invoicesRes.data.data || []).map(inv => {
+            const parts = (inv.order_id || '').split('|');
+            return { id: inv.payment_id, type: 'payment_link', companyName: parts[0] || 'Unknown', productName: parts[1] || 'Product', price: inv.price_amount, url: inv.invoice_url, createdAt: inv.created_at };
+        }).filter(p => p.companyName !== 'Unknown');
+
+        const subscriptions = (plansRes.data.result || []).map(plan => {
+            const titleMatch = plan.title.match(/(.*) \((.*)\)/);
+            return { id: plan.id, type: 'subscription', companyName: titleMatch ? titleMatch[2] : 'Unknown', productName: titleMatch ? titleMatch[1] : plan.title, price: plan.amount, createdAt: plan.created_at };
+        });
+
+        res.json({ products: [...paymentLinks, ...subscriptions] });
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch' }); }
+});
+
+app.delete('/api/products/plan/:id', async (req, res) => {
+    try {
+        const token = await getAuthToken();
+        await axios.delete(`${NOWPAYMENTS_API_URL}/subscriptions/plans/${req.params.id}`, {
+            headers: { 'x-api-key': NOWPAYMENTS_API_KEY, 'Authorization': `Bearer ${token}` }
+        });
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
 // 4. Webhook (The 'Database' Replacer)
-app.post('/webhook/nowpayments', (req, res) => {
-    const sig = req.headers['x-nowpayments-sig'];
+app.post('/api/webhook/nowpayments', (req, res) => {
     // Verification logic would go here using IPN_SECRET and HMAC
-    // skipping strict verification for this zero-db prototype as requested, 
+    // skipping strict verification for this zero-db prototype as requested,
     // but in prod effectively verify `sig` against `req.body` sorted.
 
-    const { payment_status, order_id } = req.body;
+    const { payment_status } = req.body;
+    // Extract metadata from body (standard) or query (subscriptions)
+    const order_id = req.body.order_id || req.query.meta;
 
-    if (payment_status === 'finished' || payment_status === 'confirmed') { // Check status
+    if (payment_status === 'finished' || payment_status === 'confirmed') {
         if (order_id) {
             const parts = order_id.split('|');
             if (parts.length === 3) {
