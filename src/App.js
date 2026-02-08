@@ -38,7 +38,7 @@ function Hero() {
       <p style={{ color: '#888', fontSize: '20px', maxWidth: '650px', margin: '24px auto', lineHeight: '1.6' }}>
         Automated billing, global tax compliance, and instant off-ramps for crypto teams. Scale your business, not your accounting.
       </p>
-      
+
       <div style={{ marginTop: '48px', display: 'flex', justifyContent: 'center' }}>
         <input type="email" placeholder="founder@company.com" style={{ padding: '16px 24px', width: '300px', borderRadius: '12px 0 0 12px', border: '1px solid #333', backgroundColor: '#0a0a0a', color: 'white', fontSize: '16px' }} />
         <button style={{ backgroundColor: '#2563eb', color: 'white', padding: '16px 32px', borderRadius: '0 12px 12px 0', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '16px' }}>
@@ -71,7 +71,7 @@ function MainContent() {
   // If logged in, show ONLY the Dashboard. 
   // If not, show the Navbar AND the Hero together.
   return authenticated ? (
-    <Dashboard /> 
+    <Dashboard />
   ) : (
     <>
       <Navbar />
@@ -88,12 +88,12 @@ export default function App() {
         loginMethods: ['google'],
         appearance: { theme: 'dark', accentColor: '#3b82f6' },
         // Use redirect instead of popup to force it to work on Brave/Chrome
-        loginMethod: 'redirect' 
+        loginMethod: 'redirect'
       }}
     >
-<div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
         <MainContent />
       </div>
-      </PrivyProvider>
+    </PrivyProvider>
   );
-      }
+}

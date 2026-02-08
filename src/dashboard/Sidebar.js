@@ -1,7 +1,7 @@
 import React from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 
-const Sidebar = () => {
+const Sidebar = ({ setCurrentView, currentView }) => {
   const { logout } = usePrivy();
   const menuItems = ["Home", "Products", "Customers", "Analytics", "Sales", "Finance", "Settings"];
 
@@ -16,36 +16,26 @@ const Sidebar = () => {
 
       <nav style={{ flexGrow: 1 }}>
         {menuItems.map(item => (
-          <div key={item} style={{
-            padding: '10px 12px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            color: item === "Home" ? "#fff" : "#888",
-            backgroundColor: item === "Home" ? "#1a1a1a" : "transparent",
-            marginBottom: '4px',
-            fontSize: '0.95rem'
-          }}>
+          <div key={item}
+            onClick={() => {
+              if (item === "Home") setCurrentView('revenue');
+            }}
+            style={{
+              padding: '10px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              color: (item === "Home" && currentView === 'revenue') ? "#fff" : "#888",
+              backgroundColor: (item === "Home" && currentView === 'revenue') ? "#1a1a1a" : "transparent",
+              marginBottom: '4px',
+              fontSize: '0.95rem'
+            }}>
             {item}
           </div>
         ))}
       </nav>
 
-      {/* Helio Redirect Button */}
-      <button
-        onClick={() => window.location.href = 'https://hel.io'}
-        style={{
-          padding: '12px',
-          backgroundColor: '#0070f3', // Highlighted Blue
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontWeight: '600',
-          marginTop: '20px'
-        }}
-      >
-        Create Payment Link
-      </button>
+
+
 
       <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #222' }}>
         <button
