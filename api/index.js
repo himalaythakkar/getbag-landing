@@ -68,9 +68,6 @@ const createPaymentLink = async (req, res) => {
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}`;
 
-        // Update record with Checkout URL
-        await airtableRequest('PATCH', PRODUCTS_TABLE, { 'Checkout URL': checkout_url }, record.id);
-
         res.json({ checkout_url, message: 'Payment link created' });
     } catch (error) {
         console.error('Airtable/NOWPayments Error:', error.response ? error.response.data : error.message);
@@ -94,9 +91,6 @@ const createSubscriptionPlan = async (req, res) => {
         });
 
         const checkout_url = `${req.headers.origin || ''}/checkout/${record.id}?type=sub`;
-
-        // Update record with Checkout URL
-        await airtableRequest('PATCH', SUBS_TABLE, { 'Checkout URL': checkout_url }, record.id);
 
         res.json({ checkout_url, message: 'Subscription plan created' });
     } catch (error) {
