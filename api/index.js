@@ -15,8 +15,8 @@ app.use((req, res, next) => {
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || process.env.ORDERS_BASE_ID || process.env.SUBS_BASE_ID;
-const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE_NAME || 'Products';
-const SUBS_TABLE = process.env.SUBS_TABLE_NAME || 'Subscription Plans';
+const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE_NAME || 'Orders';
+const SUBS_TABLE = process.env.SUBS_TABLE_NAME || 'SubscriptionPlans';
 const ORDERS_TABLE = process.env.ORDERS_TABLE_NAME || 'Orders';
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 
