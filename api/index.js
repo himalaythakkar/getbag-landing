@@ -1,130 +1,90 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-require('dotenv').config();
-
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
 
-const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
-const IPN_SECRET = process.env.IPN_SECRET;
-const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
+// Logger for debugging on Vercel
+app.use((req, res, next) => {
+    console.log(`[Request] ${req.method} ${req.url}`);
+    next();
+});
 
-// Helper to pack metadata
-const packMetadata = (companyName, productName, price) => {
-    return `${companyName}|${productName}|${price}`;
-};
+// --- MOCK DATA STORE (Local to this instance) ---
+let mockProducts = [
+    {
+        id: 'mock-1',
+        type: 'payment_link',
+        companyName: 'Acme Corp',
+        productName: 'Premium Subscription',
+        price: '99',
+        currency: 'usd',
+        url: 'https://example.com/pay/mock-1',
+        status: 'finished',
+        createdAt: new Date().toISOString()
+    },
+    {
+        id: 'mock-2',
+        type: 'payment_link',
+        companyName: 'Global Tech',
+        productName: 'Digital Content Pack',
+        price: '25',
+        currency: 'usd',
+        url: 'https://example.com/pay/mock-2',
+        status: 'waiting',
+        createdAt: new Date().toISOString()
+    }
+];
 
-// 2. 'Payment Link' Flow - mapped to /api/create-payment-link
-app.post('/api/create-payment-link', async (req, res) => {
+// --- API Logic (Mocked for Hackathon) ---
+
+const createPaymentLink = async (req, res) => {
     const { companyName, productName, price } = req.body;
-
     if (!companyName || !productName || !price) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const order_id = packMetadata(companyName, productName, price);
+    const newLink = {
+        id: `mock-${Date.now()}`,
+        type: 'payment_link',
+        companyName,
+        productName,
+        price,
+        currency: 'usd',
+        url: `https://example.com/pay/${Date.now()}`,
+        status: 'waiting',
+        createdAt: new Date().toISOString()
+    };
 
-    try {
-        const response = await axios.post(
-            `${NOWPAYMENTS_API_URL}/invoice`,
-            {
-                price_amount: price,
-                price_currency: 'usd',
-                order_id: order_id,
-                order_description: `Payment for ${productName} by ${companyName}`,
-                // Note: You'll need to update this URL manually in production to your Vercel URL
-                ipn_callback_url: req.headers.host ? `https://${req.headers.host}/api/webhook/nowpayments` : undefined
-            },
-            {
-                headers: {
-                    'x-api-key': NOWPAYMENTS_API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+    // Add to our mock list for the demo session
+    mockProducts.unshift(newLink);
 
-        res.json({ invoice_url: response.data.invoice_url });
-    } catch (error) {
-        console.error('Error creating payment link:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Failed to create payment link' });
-    }
-});
+    console.log('Mock Payment Link Created:', newLink);
+    res.json({ invoice_url: newLink.url, message: 'Mock link created successfully' });
+};
 
-// 3. 'Subscriptions' Flow - mapped to /api/create-subscription
-app.post('/api/create-subscription', async (req, res) => {
-    const { companyName, productName, price, email } = req.body;
+const getProducts = async (req, res) => {
+    console.log('Fetching mock products...');
+    res.json({ products: mockProducts });
+};
 
-    if (!companyName || !productName || !price || !email) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
+const deleteProduct = async (req, res) => {
+    const { id } = req.params;
+    console.log('Mock Delete Product:', id);
+    mockProducts = mockProducts.filter(p => p.id !== id);
+    res.json({ message: 'Mock product deleted' });
+};
 
-    const packedMetadata = packMetadata(companyName, productName, price);
+// --- ROUTES ---
 
-    try {
-        // Step A: Create Plan
-        const planResponse = await axios.post(
-            `${NOWPAYMENTS_API_URL}/subscriptions/plans`,
-            {
-                title: productName,
-                interval_day: 30,
-                amount: price,
-                currency: 'usd'
-            },
-            {
-                headers: {
-                    'x-api-key': NOWPAYMENTS_API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+app.post(['/api/create-payment-link', '/create-payment-link'], createPaymentLink);
+app.get(['/api/products', '/products'], getProducts);
+app.delete(['/api/products/:id', '/products/:id'], deleteProduct);
 
-        const planId = planResponse.data.id;
-
-        // Step B: Create Subscription
-        const subResponse = await axios.post(
-            `${NOWPAYMENTS_API_URL}/subscriptions`,
-            {
-                subscription_plan_id: planId,
-                email: email,
-                order_id: packedMetadata
-            },
-            {
-                headers: {
-                    'x-api-key': NOWPAYMENTS_API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-
-        res.json({ message: 'Subscription created successfully', subscription_id: subResponse.data.id });
-    } catch (error) {
-        console.error('Error creating subscription:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Failed to create subscription' });
-    }
-});
-
-// 4. Webhook - mapped to /api/webhook/nowpayments
-app.post('/api/webhook/nowpayments', (req, res) => {
-    const { payment_status, order_id } = req.body;
-
-    if (payment_status === 'finished' || payment_status === 'confirmed') {
-        if (order_id) {
-            const parts = order_id.split('|');
-            if (parts.length === 3) {
-                const [company, product, price] = parts;
-                console.log('--- PAYMENT RECEIVED ---');
-                console.log(`Company: ${company}`);
-                console.log(`Product: ${product}`);
-                console.log(`Price: $${price}`);
-                console.log('------------------------');
-            }
-        }
-    }
-
+// Webhook placeholder
+app.post(['/api/webhook/nowpayments', '/webhook/nowpayments'], (req, res) => {
     res.sendStatus(200);
 });
 
