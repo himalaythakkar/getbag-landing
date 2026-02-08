@@ -23,7 +23,8 @@
     "start": "react-scripts start",
     "server": "node server.js",
     "dev": "vercel dev",
-    "build": "react-scripts build",
+    "build": "echo 'Using pre-built files'",
+    "build:real": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

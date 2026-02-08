@@ -4,6 +4,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard';
 import CheckoutPage from './checkout/CheckoutPage';
+
 function Navbar() {
   const { login, authenticated, logout, user } = usePrivy();
   return (
@@ -70,32 +71,39 @@ function MainContent() {
   const { authenticated, ready } = usePrivy();
   if (!ready) return null;
 
-  // If logged in, show ONLY the Dashboard. 
-  // If not, show the Navbar AND the Hero together.
-  return authenticated ? (
-    <Dashboard />
-  ) : (
-    <>
-      <Navbar />
-      <Hero />
-    </>
+  return (
+    <Routes>
+      <Route path="/checkout/:productId" element={<CheckoutPage />} />
+      <Route path="/" element={
+        authenticated ? (
+          <Dashboard />
+        ) : (
+          <>
+            <Navbar />
+            <Hero />
+          </>
+        )
+      } />
+    </Routes>
   );
 }
+
 export default function App() {
   return (
-    <PrivyProvider
-      appId="cml7qeu8h03a7l80b0ys65ilk"
-      onSuccess={() => window.location.reload()}
-      config={{
-        loginMethods: ['google'],
-        appearance: { theme: 'dark', accentColor: '#3b82f6' },
-        // Use redirect instead of popup to force it to work on Brave/Chrome
-        loginMethod: 'redirect'
-      }}
-    >
-      <div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-        <MainContent />
-      </div>
-    </PrivyProvider>
+    <Router>
+      <PrivyProvider
+        appId="cml7qeu8h03a7l80b0ys65ilk"
+        onSuccess={() => window.location.reload()}
+        config={{
+          loginMethods: ['google'],
+          appearance: { theme: 'dark', accentColor: '#3b82f6' },
+          loginMethod: 'redirect'
+        }}
+      >
+        <div style={{ backgroundColor: '#000', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+          <MainContent />
+        </div>
+      </PrivyProvider>
+    </Router>
   );
 }

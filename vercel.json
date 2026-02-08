@@ -1,6 +1,7 @@
 {
     "version": 2,
     "installCommand": "npm install --legacy-peer-deps",
+    "outputDirectory": "build",
     "rewrites": [
         {
             "source": "/api/(.*)",
