@@ -15,9 +15,9 @@ app.use((req, res, next) => {
 
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || process.env.ORDERS_BASE_ID || process.env.SUBS_BASE_ID;
-const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE_NAME || 'Orders';
-const SUBS_TABLE = process.env.SUBS_TABLE_NAME || 'SubscriptionPlans';
-const ORDERS_TABLE = process.env.ORDERS_TABLE_NAME || 'Orders';
+const PRODUCTS_TABLE = 'Orders';
+const SUBS_TABLE = 'SubscriptionPlans';
+const ORDERS_TABLE = 'Orders';
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 
 // Debugging environment variables arrival (without leaking full values)
@@ -123,7 +123,7 @@ const getProductById = async (req, res) => {
                 productName: record.fields['Product Name'] || record.fields['Plan Title'],
                 description: record.fields['Description'],
                 price: record.fields['Price'] || record.fields['Recurring Price'],
-                companyName: record.fields['Merchant Name'],
+                companyName: record.fields['Company Name'],
                 merchantLogo: record.fields['Logo URL'],
                 type: isSub ? 'subscription' : 'one-time'
             }
@@ -173,7 +173,7 @@ const getProductsList = async (req, res) => {
             ...(oneTime.records || []).map(r => ({
                 id: r.id,
                 type: 'payment_link',
-                companyName: r.fields['Merchant Name'],
+                companyName: r.fields['Company Name'],
                 productName: r.fields['Product Name'],
                 price: r.fields['Price'],
                 url: r.fields['Checkout URL'],
@@ -182,7 +182,7 @@ const getProductsList = async (req, res) => {
             ...(sub.records || []).map(r => ({
                 id: r.id,
                 type: 'subscription',
-                companyName: r.fields['Merchant Name'],
+                companyName: r.fields['Company Name'],
                 productName: r.fields['Plan Title'],
                 price: r.fields['Recurring Price'],
                 url: r.fields['Checkout URL'],
