@@ -10,7 +10,7 @@ const Sidebar = ({ setCurrentView, currentView }) => {
     { id: 'Customers', label: 'Customers' },
     { id: 'Analytics', label: 'Analytics' },
     { id: 'Sales', label: 'Sales' },
-    { id: 'Finance', label: 'MoR vs PG', view: 'mor-vs-pg' },
+    { id: 'Finance', label: 'MoR vs PG', view: 'mor-vs-pg', badge: '(new)' },
     { id: 'Settings', label: 'Settings' }
   ];
 
@@ -47,9 +47,26 @@ const Sidebar = ({ setCurrentView, currentView }) => {
               fontSize: '0.9rem',
               fontWeight: currentView === item.view ? '600' : '400',
               transition: 'all 0.2s ease',
-              border: currentView === item.view ? '1px solid #222' : '1px solid transparent'
+              border: currentView === item.view ? '1px solid #222' : '1px solid transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px'
             }}>
-            {item.label}
+            <span>{item.label}</span>
+            {item.badge && (
+              <span style={{
+                fontSize: '0.65rem',
+                backgroundColor: '#0070f320',
+                color: '#0070f3',
+                padding: '2px 6px',
+                borderRadius: '6px',
+                fontWeight: '700',
+                textTransform: 'uppercase'
+              }}>
+                {item.badge}
+              </span>
+            )}
           </div>
         ))}
 

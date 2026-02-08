@@ -3,29 +3,34 @@ import React from 'react';
 const MoRVsPG = () => {
     const comparisonData = [
         {
-            feature: 'Taxes & Compliance',
-            mor: 'Handled globally (Sales tax, VAT)',
-            pg: 'You must handle it yourself'
+            feature: 'Legal Seller',
+            mor: 'MoR',
+            pg: 'Your Company'
         },
         {
-            feature: 'Liability',
-            mor: 'MoR takes full legal/financial risk',
-            pg: 'You are liable for all issues'
+            feature: 'Tax Collection & Remittance',
+            mor: 'Handled by MoR',
+            pg: 'You are responsible'
+        },
+        {
+            feature: 'Compliance & Regulatory Burden',
+            mor: 'MoR assumes liability',
+            pg: 'You handle local laws and chargebacks'
+        },
+        {
+            feature: 'Settlement Currency',
+            mor: 'Fiat/Stables',
+            pg: 'Fiat'
+        },
+        {
+            feature: 'Risk Management',
+            mor: 'KYT tools',
+            pg: 'You set up your own tools (e.g. Stripe Radar)'
         },
         {
             feature: 'Payouts',
-            mor: 'Unified payout in stablecoins',
-            pg: 'Complex multi-currency settlements'
-        },
-        {
-            feature: 'Integration',
-            mor: 'One simple API/Link',
-            pg: 'Complex developer setup needed'
-        },
-        {
-            feature: 'Fees',
-            mor: 'All-in-one inclusive fee',
-            pg: 'Separate fees for gateway, tax, etc.'
+            mor: 'Fiat/Stables',
+            pg: 'Direct from PG to you, with bank setup'
         }
     ];
 
@@ -34,7 +39,7 @@ const MoRVsPG = () => {
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ marginBottom: '48px' }}>
                     <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '16px', letterSpacing: '-0.03em' }}>
-                        Merchant of Record <span style={{ color: '#0070f3' }}>vs</span> Payment Gateway
+                        Having a reseller who understands crypto <span style={{ color: '#0070f3' }}>makes it easier</span>
                     </h1>
                     <p style={{ color: '#888', fontSize: '1.1rem', lineHeight: '1.6', maxWidth: '700px' }}>
                         Choose the right infrastructure for your global stablecoin payments. Get Em Bags handles the complexity of global commerce so you can focus on building.
