@@ -1,7 +1,9 @@
 import React from 'react';
 import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './dashboard/Dashboard';
+import CheckoutPage from './checkout/CheckoutPage';
 function Navbar() {
   const { login, authenticated, logout, user } = usePrivy();
   return (

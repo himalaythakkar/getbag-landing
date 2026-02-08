@@ -77,8 +77,71 @@ const deleteProduct = async (req, res) => {
     res.json({ message: 'Mock product deleted' });
 };
 
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME || 'Products';
+const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
+
+const getProductById = async (req, res) => {
+    const { id } = req.params;
+
+    // If Airtable keys are missing, return mock for dev
+    if (!AIRTABLE_PAT || !AIRTABLE_BASE_ID) {
+        const mock = mockProducts.find(p => p.id === id) || mockProducts[0];
+        return res.json({ product: { ...mock, companyName: 'Arthek LLP (Mock)', description: 'Mock description from Airtable fallback' } });
+    }
+
+    try {
+        const response = await axios.get(
+            `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${id}`,
+            { headers: { Authorization: `Bearer ${AIRTABLE_PAT}` } }
+        );
+
+        const record = response.data;
+        res.json({
+            product: {
+                id: record.id,
+                productName: record.fields['Product Name'],
+                description: record.fields['Description'],
+                price: record.fields['Price'],
+                companyName: record.fields['Merchant Name'] || 'Bag Merchant',
+                merchantLogo: record.fields['Logo URL']
+            }
+        });
+    } catch (error) {
+        console.error('Airtable Error:', error.response ? error.response.data : error.message);
+        res.status(404).json({ error: 'Product not found' });
+    }
+};
+
+const handleCheckoutSubmit = async (req, res) => {
+    const { productId, name, email } = req.body;
+
+    if (!MAKE_WEBHOOK_URL) {
+        console.log('Mock Submission (No Make.com URL):', { productId, name, email });
+        return res.json({ invoice_url: 'https://example.com/mock-payment' });
+    }
+
+    try {
+        const response = await axios.post(MAKE_WEBHOOK_URL, {
+            productId,
+            customerName: name,
+            customerEmail: email,
+            timestamp: new Date().toISOString()
+        });
+
+        // Make.com should return the NOWPayments invoice_url
+        res.json(response.data);
+    } catch (error) {
+        console.error('Make.com Error:', error.message);
+        res.status(500).json({ error: 'Failed to process checkout' });
+    }
+};
+
 // --- ROUTES ---
 
+app.get(['/api/products/:id', '/products/:id'], getProductById);
+app.post(['/api/checkout/submit', '/checkout/submit'], handleCheckoutSubmit);
 app.post(['/api/create-payment-link', '/create-payment-link'], createPaymentLink);
 app.get(['/api/products', '/products'], getProducts);
 app.delete(['/api/products/:id', '/products/:id'], deleteProduct);
