@@ -22,12 +22,25 @@ const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 
 // --- Helper: Airtable API ---
 const airtableRequest = async (method, table, data = null, recordId = '') => {
+    if (!AIRTABLE_BASE_ID) {
+        console.error('[Airtable Error] AIRTABLE_BASE_ID is missing');
+        throw new Error('AIRTABLE_BASE_ID is missing');
+    }
     const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}${recordId ? '/' + recordId : ''}`;
     const headers = { Authorization: `Bearer ${AIRTABLE_PAT}`, 'Content-Type': 'application/json' };
     const config = { method, url, headers };
     if (data) config.data = { fields: data };
-    const response = await axios(config);
-    return response.data;
+
+    console.log(`[Airtable] ${method} ${table} ${recordId ? '(ID: ' + recordId + ')' : ''}`);
+
+    try {
+        const response = await axios(config);
+        return response.data;
+    } catch (error) {
+        const errorData = error.response ? error.response.data : { message: error.message };
+        console.error('[Airtable API Error Detail]:', JSON.stringify(errorData, null, 2));
+        throw error;
+    }
 };
 
 // --- API Logic ---
