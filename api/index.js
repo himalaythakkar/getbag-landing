@@ -20,6 +20,13 @@ const SUBS_TABLE = process.env.SUBS_TABLE_NAME || 'Subscription Plans';
 const ORDERS_TABLE = process.env.ORDERS_TABLE_NAME || 'Orders';
 const MAKE_WEBHOOK_URL = process.env.MAKE_WEBHOOK_URL;
 
+// Debugging environment variables arrival (without leaking full values)
+console.log('--- Env Check ---');
+console.log('BASE_ID exists:', !!AIRTABLE_BASE_ID, AIRTABLE_BASE_ID ? `(${AIRTABLE_BASE_ID.substring(0, 5)}...)` : 'MISSING');
+console.log('PAT exists:', !!AIRTABLE_PAT, AIRTABLE_PAT ? `(${AIRTABLE_PAT.substring(0, 10)}...)` : 'MISSING');
+console.log('PRODUCTS_TABLE:', PRODUCTS_TABLE);
+console.log('-----------------');
+
 // --- Helper: Airtable API ---
 const airtableRequest = async (method, table, data = null, recordId = '') => {
     if (!AIRTABLE_BASE_ID) {
@@ -55,7 +62,7 @@ const createPaymentLink = async (req, res) => {
     try {
         // Step A: Save to Airtable Products
         const record = await airtableRequest('POST', PRODUCTS_TABLE, {
-            'Merchant Name': companyName,
+            'Company Name': companyName,
             'Product Name': productName,
             'Description': description,
             'Price': parseFloat(price),
